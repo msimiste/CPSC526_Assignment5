@@ -17,14 +17,13 @@ def main():
     connection()
     
     
-def connectIRC(s, nick, CHAN): 
-    global NICK   
+def connectIRC(s, nick, CHAN):    
     nick = nick + ''.join(random.choice(string.ascii_lowercase) for i in range(5))
     s.send("USER {} {} {} {}:Test\n".format(nick,nick,nick,nick).encode("utf-8"))
     s.send("PASS {}\r\n".format(PASS).encode("utf-8"))
     s.send("NICK {}\r\n".format(nick).encode("utf-8"))
     s.send("JOIN {}\r\n".format(CHAN).encode("utf-8"))
-    NICK = nick
+
 def parsemsg(s):
     """Breaks a message from an IRC server into its prefix, command, and arguments.
     """
@@ -64,27 +63,12 @@ def connection():
     while True:
         response = s.recv(1024).decode("utf-8")
         (prefix, command, args)= parsemsg(response)
-        for p in args:
-            if(":Nickname is already in use" in p):
-                connectIRC(s, NICK, CHAN) 
-            print ("arg["+p.strip()+"]") 
-        print("Line 67 Command: " + str(command))
-        print("Line68 prefix: " +str(prefix))
        
+        for p in args: print ("arg["+p.strip()+"]") 
         if command == "PRIVMSG":
-                test = args[1].split()
-                print("Line 71 Command: ")
-                print(test)
-                if args[0] == CHAN and args[1].split()[0] == "!status":
-                    s.send("PRIVMSG {} : {}\r\n".format("simdevs", NICK).encode("utf-8"))
+                if args[0] == CHAN and args[1].strip() == "!saysomething":
+                    s.send("PRIVMSG {} :Im a new message\r\n".format(CHAN).encode("utf-8"))
                     print("PRIVMSG {} :Im a new message\r\n".format(CHAN).encode("utf-8"))
-                if args[0] == CHAN and args[1].split()[0] == "!attack":
-                    attackhost = args[1].split()[1].strip()
-                    attackPort = args[1].split()[2].strip()
-                    print("attack mode: " + str(attackhost) + " " + str(attackPort))
-                    #s.send("PRIVMSG {} : Im a new message\r\n".format("simdevs").encode("utf-8"))
-                    s.send("PRIVMSG {} : I will attack you\r\n".format("simdevs").encode("utf-8"))
-                    
                 if args[0] == CHAN and args[1].strip() == "!quit":
                     s.send("PRIVMSG {} :cpsc526bot out!\r\n".format(CHAN).encode("utf-8"))
                     print(NICK + " out!")
@@ -96,9 +80,9 @@ def connection():
         elif command == "433":
             print("Line 61 command: " + str(command))
             connectIRC(s, NICK, CHAN)
-        #print("Line 62: " + response)
+        print("Line 62: " + response)
     s.close()
-    #s  leep(1 / cfg.RATE)
+    #sleep(1 / cfg.RATE)
 
 if __name__ == '__main__':
     main()
