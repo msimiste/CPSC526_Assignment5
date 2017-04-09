@@ -1,6 +1,5 @@
 import socket
 import time
-import irc
 import random
 import string
 import sys
@@ -45,17 +44,27 @@ class clientBot(object):
         self.NICK = nick
         
     def moveIRC(self,s,CHAN):
-        s.send("USER {} {} {} {}:Test\n".format(self.NICK,self.NICK,self.NICK,self.NICK).encode("utf-8"))
-        s.send("NICK {}\r\n".format(self.NICK).encode("utf-8"))
-        s.send("JOIN {}\r\n".format(CHAN).encode("utf-8"))
-    
+        try:            
+            s.send("USER {} {} {} {}:Test\n".format(self.NICK,self.NICK,self.NICK,self.NICK).encode("utf-8"))
+            s.send("NICK {}\r\n".format(self.NICK).encode("utf-8"))
+            s.send("JOIN {}\r\n".format(CHAN).encode("utf-8"))
+            time.sleep(5)
+            s.send("PRIVMSG {} : {}\r\n".format(self.controller,"!MOVE! move successful").encode("utf-8"))
+        except Exception as e:
+            s.send("PRIVMSG {} : {}\r\n".format(self.controller,"!MOVE! move unsuccessful").encode("utf-8"))
+            
     def attack(self, h, p):
-        sock = socket.socket()
-        sock.connect((h,int(p)))
-        sock.send("{} {}\r\n".format(self.counter,self.NICK).encode("utf-8"))
-        sock.close()
-        self.counter = self.counter + 1
-    
+        try:
+            sock = socket.socket()
+            sock.connect((h,int(p)))
+            sock.send("{} {}\r\n".format(self.counter,self.NICK).encode("utf-8"))
+            sock.close()
+            self.counter = self.counter + 1
+            self.s.send("PRIVMSG {} : !ATTACK! attack was successfull\r\n".format(self.controller).encode("utf-8"))
+        except Exception as e:
+            self.s.send("PRIVMSG {} : !ATTACK! attack was unsucccessful\r\n".format(self.controller).encode("utf-8"))
+            
+            
     def move(self, host, port, chan):
         self.host = host
         self.port = int(port)
@@ -133,12 +142,11 @@ def connection():
                         print(cBot.controller)
                     if args[0] == cBot.chan and args[1].split()[0] == "!status":
                         if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
-                            cBot.s.send("PRIVMSG {} : {}\r\n".format(cBot.controller, cBot.NICK).encode("utf-8"))
+                            cBot.s.send("PRIVMSG {} : {} {}\r\n".format(cBot.controller,"!STATUS!", cBot.NICK).encode("utf-8"))
                     if args[0] == cBot.chan and args[1].split()[0] == "!attack":
                         if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
                             attackhost = args[1].split()[1].strip()
                             attackPort = args[1].split()[2].strip()
-                            cBot.s.send("PRIVMSG {} : I will attack you\r\n".format(cBot.controller).encode("utf-8"))
                             cBot.attack(attackhost,attackPort)                    
                     if args[0] == cBot.chan and args[1].split()[0] == "!move":
                         if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
@@ -146,6 +154,7 @@ def connection():
                             newHost = args[1].split()[1].strip()
                             newPort = args[1].split()[2].strip()
                             newChan = args[1].split()[3].strip()
+                            print("line 148: " + newChan)
                             cBot.move(newHost,newPort,newChan)
             elif command == "KICK" :
                 cBot.connectIRC(cBot.s,cBot.NICK, cBot.chan)                              

