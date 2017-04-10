@@ -172,7 +172,7 @@ class conBot(threading.Thread):
                     #print("Please enter a valid command:")                                      
                     threading.Thread(target = self.connection).start()
                     time.sleep(5)
-                    #userCommand = input("Please enter a valid command:")   
+                    userCommand = input("Please enter a valid command:")   
                     #sys.stdin.write(userCommand)            
                     #userCommand = input("Please enter a valid command:")
                     #sys.stdout.write(userCommand)
